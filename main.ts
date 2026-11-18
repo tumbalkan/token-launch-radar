@@ -1,17 +1,21 @@
-// A working token-radar-01 entry (Node 22, standard library only).
+// Token Radar — a token-radar-01 entry (Node 22, standard library only).
 //
-// The program reads the sealed snapshot from /input/snapshot.json (or --input <file|dir>), scores every
-// pre-token protocol with the model in lib/model.ts, writes the ranked board to /output/board.json, and
-// copies this repository's dashboard/ and screenshots/ to /output. Last, it writes /output/dossier.json,
-// the summary the judge reads, with the vendored make.fun library.
+// What this program does, end to end:
+//   1. Reads the sealed snapshot from /input/snapshot.json (or --input <file|dir>).
+//   2. Scores every pre-token protocol with the radar-2 model in lib/model.ts.
+//   3. Writes the ranked board to /output/board.json and the dashboard data to /output/data.js.
+//   4. Copies this repository's dashboard/ and screenshots/ into /output.
+//   5. Writes /output/dossier.json last, via the vendored make.fun library — the
+//      scorer rebuilds the dossier from this /output and compares bytes, so it
+//      must be written after everything else.
 //
-// The dashboard is a static page, no framework and no network: dashboard/index.html, dashboard/app.css
-// and dashboard/app.js read /output/data.js, which this program writes from the same board. A starting
-// point, not a winner: it covers the watchlist, states the model and gives every protocol a farm plan.
-// Change the model, the page or the plan; keep the gate's shape.
+// The dashboard is a static page with no framework and no network:
+// dashboard/index.html, dashboard/app.css and dashboard/app.js read the
+// /output/data.js this program writes from the same board, so the page and
+// the board can never disagree.
 //
 // Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
-//   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts --input ../input/snapshot.json
+//   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts --input input/snapshot.json
 
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -21,12 +25,12 @@ import { buildDossier } from './vendor/makefun-board.ts';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 
-/** The scorer's own caps (reference/gate.json): the text cap shapes the bytes, the rest refuse. */
+/** The scorer's own caps (reference/gate.json): the text cap shapes the dossier bytes, the rest refuse. */
 const TEXT_MAX_BYTES = 65_536;
 const SCREENSHOT_CAPS = { max: 4, max_bytes: 524_288 };
 const IMAGE_NAME = /^[A-Za-z0-9_][A-Za-z0-9._-]{0,127}$/;
 
-/** --name <value> out of the arguments, or the fallback. */
+/** Read `--name <value>` (or `--name=<value>`) out of the arguments, or fall back. */
 function arg(name: string, fallback: string): string {
   const at = process.argv.indexOf(`--${name}`);
   if (at >= 0 && at + 1 < process.argv.length) return process.argv[at + 1]!;

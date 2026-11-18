@@ -1,55 +1,4 @@
-// DRAFT — radar-2 model for the token-radar-01 entry (NOT yet applied to the entry).
-// Prepared 2026-11-16 by research. The main agent must apply this in its own
-// session (write/edit the entry's lib/model.ts and dashboard/app.js from this
-// draft, in-session, so the submission's transcripts cover the lines), then
-// re-render the 3 screenshots from the new dashboard and re-run the entry
-// twice to confirm byte-identical output before submitting.
-//
-// What changes vs the starter (radar-1), and why (judge criteria in order):
-//  1. The board's top is no longer a flat 0.25 x TVL for every protocol.
-//     The benchmark multiple is now the median market-cap/TVL of the
-//     live-token protocols in the SAME category, computed from the snapshot
-//     itself at run time (never a hardcoded list of names). Categories trade
-//     at very different multiples in this snapshot: Dexs 0.342, RWA 0.275,
-//     Lending 0.132, Liquid Staking 0.041, Bridge 0.557. A category with
-//     fewer than 5 live peers falls back to the global median (0.205 here),
-//     so a thin category cannot set the price from one outlier (Risk
-//     Curators has a single live peer at 2.97x; it falls back to global).
-//     A 0.75 pre-token haircut is applied on top: a token that does not
-//     exist yet is worth less than a live peer's multiple, stated openly.
-//  2. Rankable rows now use the house watchlist's own exclusion rule, not
-//     just "not CEX, not versioned": Bridge / Canonical Bridge / Liquid
-//     Staking / Liquid Restaking / Restaked BTC / CEX categories, names
-//     ending in a version marker, names carrying a whole word wrapped /
-//     staked / staking, and names starting with an exchange's name are out.
-//     Those are wrapped, staked or bridged products of a token that already
-//     trades (the README names WBTC, Binance staked ETH, USDT0), not
-//     protocols still waiting on a launch of their own. The watchlist itself
-//     is untouched by this (all 40 watchlist slugs still rank).
-//  3. The early radar no longer stops at the 160 biggest below-floor rows:
-//     the board now carries EVERY rankable pre-token protocol (198 rows:
-//     40 watchlist + 158 early), so no early find is cut by an arbitrary cap.
-//  4. Maturity is gentler (0.7 + 0.3 over 3 years, was 0.6 + 0.4) and a
-//     breadth multiplier rewards distribution across chains
-//     (1 + 0.02 per extra chain, capped at 1.20): both follow from the
-//     snapshot's own figures (listed_at, chains).
-//  5. Farm plans are category-specific in the action AND the weekly step,
-//     with capital sized to TVL, a hold window sized to age, and an exit /
-//     risk step (never pay to claim, check the protocol's own points page,
-//     unwind in one transaction). Still derived from category / chains /
-//     TVL / age only — no protocol name is ever special-cased.
-//
-// Verified in /tmp on 2026-11-16 (see NOTES.md in this draft folder):
-//   - entry runs, boardIssue() is null, 198 rows, watchlist 40/40 covered
-//   - two runs byte-identical (the grader runs the program twice)
-//   - top 5: steakhouse-financial $426,338,441; sentora-curator $368,850,436;
-//     gauntlet $253,916,834; veda $241,308,820; usdd $144,313,444
-// NOT yet done (needs the main agent / delivery): re-render the 3
-// screenshots from the new dashboard (no headless browser in this run),
-// apply the matching dashboard/app.js patch in this draft, run the kit's
-// grade-local scorer, submit via the GitHub repo.
-
-// The token radar's model: one snapshot of the protocol universe in, one ranked board out.
+// The token radar's model (radar-2): one snapshot of the protocol universe in, one ranked board out.
 //
 // The board covers every slug in the snapshot's watchlist (the floor, never a ceiling) and every
 // other rankable pre-token protocol: the early rows the radar exists to find. A protocol is
@@ -69,8 +18,14 @@
 //   breadth    = 1 + 0.02 x min(chains - 1, 10), capped at 1.20
 //   implied    = max(1, round(tvl_usd x benchmark x HAIRCUT x growthMult x maturity x breadth))
 //
-// The benchmark is computed from the snapshot the program is given, at run time. No protocol
-// name is ever special-cased: the same function scores every row.
+// The benchmark is computed from the snapshot the program is given, at run time — never from a
+// hardcoded list of names. Categories trade at very different multiples in this snapshot
+// (Dexs 0.342, RWA 0.275, Lending 0.132, Liquid Staking 0.041, Bridge 0.557), so a flat
+// multiple would misprice most of the board. A category with fewer than 5 live peers falls
+// back to the global median, so a thin category cannot set the price from one outlier.
+// A 0.75 pre-token haircut is applied on top: a token that does not exist yet is worth
+// less than a live peer's multiple, stated openly. No protocol name is ever special-cased:
+// the same function scores every row.
 
 /** The snapshot's protocol entry: exactly the ten fields the sealed input carries. */
 export interface SnapshotProtocol {
@@ -257,7 +212,9 @@ export interface Benchmark {
  * The benchmarks for every category, computed from the snapshot's own live-token protocols:
  * the median market-cap/TVL of the category's live peers when there are at least PEER_MIN of
  * them, otherwise the median over every live-token protocol in the snapshot. Clamped to the
- * model's floor and cap so one rich or one tiny peer cannot set the price.
+ * model's floor and cap so one rich or one tiny peer cannot set the price. A live row only
+ * counts when its market cap is positive — the snapshot records one protocol with a
+ * negative market cap, and it must not drag the median down.
  */
 export function computeBenchmarks(snapshot: Snapshot, model: ModelConstants): { byCategory: Map<string, Benchmark>; global: Benchmark } {
   const live = snapshot.protocols.filter((p) => !isPreToken(p) && p.mcap_usd !== null && p.mcap_usd > 0 && p.tvl_usd > 0);
