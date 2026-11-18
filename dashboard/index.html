@@ -3,12 +3,56 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Token Radar: pre-token protocols ranked by implied value</title>
+<title>Token Launch Radar — pre-token protocols ranked by implied value</title>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
-<a class="skip" href="#board">Skip to the board</a>
-<main id="board" tabindex="-1" aria-busy="true"></main>
+<a class="skip-link" href="#main">Skip to the board</a>
+<div class="page" id="main">
+  <header class="masthead">
+    <div class="masthead-brand">
+      <span class="masthead-dot" aria-hidden="true"></span>
+      <span class="masthead-name">Token Launch Radar</span>
+    </div>
+    <div class="masthead-meta" id="meta"></div>
+  </header>
+
+  <section class="intro">
+    <div class="intro-copy">
+      <h1 id="headline">Pre-token protocols, ranked by implied value</h1>
+      <p id="subhead">The watchlist is the floor: every protocol with at least $50M of TVL and no token on record, plus every rankable pre-token protocol below it. Implied value is a model, not a promise.</p>
+    </div>
+    <dl class="intro-stats" id="stats"></dl>
+  </section>
+
+  <section class="toolbar" aria-label="Board controls">
+    <div class="toolbar-field">
+      <label for="search">Search</label>
+      <input type="search" id="search" placeholder="Name, category or chain" autocomplete="off">
+    </div>
+    <div class="toolbar-field">
+      <label for="category">Category</label>
+      <select id="category">
+        <option value="all">All categories</option>
+      </select>
+    </div>
+    <div class="toolbar-field">
+      <span class="toolbar-label">Token status</span>
+      <div class="view-switch" role="group" aria-label="Token status">
+        <button type="button" id="view-pre" aria-pressed="true">Pre-token</button>
+        <button type="button" id="view-live" aria-pressed="false">Live token</button>
+      </div>
+    </div>
+    <p class="toolbar-count" id="count" aria-live="polite"></p>
+  </section>
+
+  <section class="board-panel" id="board"></section>
+
+  <section class="model-panel" id="model"></section>
+</div>
+
+<dialog class="drawer" id="drawer" aria-labelledby="drawer-title"></dialog>
+
 <script src="../data.js"></script>
 <script src="app.js"></script>
 </body>
